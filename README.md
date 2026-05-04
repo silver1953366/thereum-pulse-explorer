@@ -93,5 +93,5 @@ Ethereum Pulse Explorer est une application de monitoring en temps réel de la b
 ## ⚙️ Installation et Lancement
 1. **Cloner le projet** :
    ```bash
-   git clone [ton-lien-github]
+   git clone [https://github.com/silver1953366/thereum-pulse-explorer]
    cd ethereum-pulse-explorer
