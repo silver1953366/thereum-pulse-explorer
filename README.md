@@ -68,3 +68,30 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+# Ethereum Pulse Explorer 🚀
+**Projet Académique - INPTIC 2026**  
+**Étudiant : Marc Essone**  
+**Spécialité : Génie Informatique**
+
+## 📌 Présentation
+Ethereum Pulse Explorer est une application de monitoring en temps réel de la blockchain Ethereum. Elle permet d'intercepter et d'afficher les transactions circulant sur le réseau principal (Mainnet) avant même leur validation finale.
+
+## 🚀 Fonctionnalités
+- **Flux Temps Réel** : Connexion via WebSocket au réseau Ethereum.
+- **Analyse de Données** : Conversion automatique des valeurs de Wei en Ether (ETH).
+- **Dashboard Dynamique** : Interface React moderne avec compteur de transactions global.
+- **Transparence** : Affichage des adresses d'expédition, de réception et des hashs uniques.
+
+## 🛠️ Technologies utilisées
+- **Frontend** : React.js
+- **Blockchain API** : Web3.js
+- **Infrastructure** : Infura (Gateway Ethereum)
+- **Langage** : JavaScript (ES6+)
+
+## ⚙️ Installation et Lancement
+1. **Cloner le projet** :
+   ```bash
+   git clone [ton-lien-github]
+   cd ethereum-pulse-explorer
