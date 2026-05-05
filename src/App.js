@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 const INFURA_ID = process.env.REACT_APP_INFURA_ID;
-// On utilise HTTPS au lieu de WSS pour contourner les erreurs de handshake
+// Utilisation de HTTPS pour une stabilité maximale sur les réseaux restreints
 const INFURA_HTTP = `https://mainnet.infura.io/v3/${INFURA_ID}`;
 
 function App() {
@@ -16,8 +16,6 @@ function App() {
   const [gasPrice, setGasPrice] = useState("...");
   const [lastBlock, setLastBlock] = useState(0);
   const [lastError, setLastError] = useState(null);
-
-  const transactionsRef = useRef([]);
 
   useEffect(() => {
     let web3;
@@ -31,34 +29,37 @@ function App() {
           return;
         }
 
-        // Initialisation en mode HTTP
         const provider = new Web3.providers.HttpProvider(INFURA_HTTP);
         web3 = new Web3(provider);
         
-        // Test de connexion initial
         await web3.eth.getBlockNumber();
         if (isMounted) {
           setConnected(true);
           setLastError(null);
-          console.log("✅ Connexion HTTP établie avec Infura");
+          console.log("✅ Connexion stable établie avec Infura");
         }
 
         const updateData = async () => {
           if (!isMounted) return;
           try {
-            // 1. Récupération du Gas
+            // 1. Récupération du Gas avec haute précision
             const price = await web3.eth.getGasPrice();
             const gwei = web3.utils.fromWei(price, 'gwei');
-            setGasPrice(Math.round(gwei));
 
-            // 2. Récupération du dernier bloc avec ses transactions
+            // Correction : On affiche les décimales si le gas est très bas (< 1 Gwei)
+            const formattedGas = parseFloat(gwei) < 1 
+              ? parseFloat(gwei).toFixed(3) 
+              : Math.round(gwei);
+
+            setGasPrice(formattedGas);
+
+            // 2. Récupération du dernier bloc et des transactions
             const blockNum = await web3.eth.getBlockNumber();
             setLastBlock(Number(blockNum));
 
             const block = await web3.eth.getBlock(blockNum, true);
             
             if (block && block.transactions && block.transactions.length > 0) {
-              // On prend les 10 dernières transactions du bloc
               const newTxs = block.transactions.slice(0, 10).map(tx => ({
                 hash: tx.hash,
                 from: tx.from,
@@ -68,29 +69,26 @@ function App() {
                 isWhale: parseFloat(web3.utils.fromWei(tx.value || "0", "ether")) >= 0.5
               }));
 
-              // Fusion intelligente pour éviter les doublons à l'affichage
               setTransactions(prev => {
                 const combined = [...newTxs, ...prev];
-                // Filtrer par hash unique et limiter à 15
+                // Filtrage des doublons par Hash unique
                 return Array.from(new Map(combined.map(item => [item.hash, item])).values()).slice(0, 15);
               });
               
               setTotalIntercepted(prev => prev + newTxs.length);
             }
           } catch (err) {
-            console.error("Erreur de mise à jour :", err.message);
+            console.error("Erreur cycle de mise à jour :", err.message);
           }
         };
 
-        // Première exécution puis répétition toutes les 10 secondes
         updateData();
-        mainInterval = setInterval(updateData, 10000);
+        mainInterval = setInterval(updateData, 10000); // Rafraîchissement toutes les 10s
 
       } catch (err) {
-        console.error("Erreur Init:", err);
         if (isMounted) {
           setConnected(false);
-          setLastError("Erreur réseau : Vérifiez votre connexion ou clé Infura");
+          setLastError("Connexion impossible : Vérifiez votre accès internet");
         }
       }
     };
@@ -111,7 +109,7 @@ function App() {
           <h1 style={styles.title}>Ethereum Pulse Explorer</h1>
         </div>
         <p style={styles.subtitle}>
-          Projet DTS 2026 | <strong>Marc Essone</strong> | INPTIC
+          Projet Monétique 2026 | <strong>Marc Essone</strong> | INPTIC
         </p>
 
         <div style={styles.statsBar}>
@@ -124,7 +122,7 @@ function App() {
           
           <div style={styles.statCard}>
             <Layers size={16} color="#818cf8" />
-            <span>Bloc: <strong>{lastBlock}</strong></span>
+            <span>Dernier Bloc: <strong>{lastBlock}</strong></span>
           </div>
 
           <div style={styles.statCard}>
@@ -159,13 +157,13 @@ function App() {
               borderLeft: tx.isWhale ? '6px solid #fbbf24' : '6px solid #38bdf8',
             }}>
               <div style={styles.txRow}>
-                <span style={styles.time}>{tx.time}</span>
+                <span style={styles.time}>🕒 {tx.time}</span>
                 <span style={{ ...styles.value, color: tx.isWhale ? '#fbbf24' : '#38bdf8' }}>
-                  {parseFloat(tx.value) > 0 ? `${parseFloat(tx.value).toFixed(4)} ETH` : "⛽ Gas Transaction"}
+                  {parseFloat(tx.value) > 0 ? `${parseFloat(tx.value).toFixed(4)} ETH` : "⛽ Frais de Gas"}
                 </span>
               </div>
               
-              <div style={styles.hash}>TX ID: {tx.hash.substring(0, 40)}...</div>
+              <div style={styles.hash}>TX ID: {tx.hash.substring(0, 42)}...</div>
 
               <div style={styles.addressBox}>
                 <div style={styles.addressItem}>
@@ -200,24 +198,35 @@ function App() {
 }
 
 const styles = {
-  container: { backgroundColor: '#020617', minHeight: '100vh', color: '#f1f5f9', fontFamily: 'Inter, sans-serif', padding: '40px 20px' },
+  container: { 
+    backgroundColor: '#020617', 
+    minHeight: '100vh', 
+    color: '#f1f5f9', 
+    fontFamily: 'Inter, sans-serif', 
+    padding: '40px 20px',
+    // Arrière-plan thématique Blockchain flouté par l'overlay sombre
+    backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.9)), url('https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed',
+  },
   header: { textAlign: 'center', marginBottom: '40px' },
-  title: { fontSize: '2.2rem', margin: 0, background: 'linear-gradient(to right, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '800' },
-  subtitle: { color: '#64748b', fontSize: '0.9rem', marginTop: '10px' },
-  statsBar: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '25px', flexWrap: 'wrap' },
-  statCard: { background: '#0f172a', padding: '10px 15px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: '8px' },
+  title: { fontSize: '2.4rem', margin: 0, background: 'linear-gradient(to right, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '900' },
+  subtitle: { color: '#94a3b8', fontSize: '0.9rem', marginTop: '10px', letterSpacing: '0.05em' },
+  statsBar: { display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '25px', flexWrap: 'wrap' },
+  statCard: { background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(4px)', padding: '12px 18px', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid rgba(30, 41, 59, 0.5)', display: 'flex', alignItems: 'center', gap: '8px' },
   errorPanel: { margin: '20px auto 0', maxWidth: '500px', background: '#450a0a', color: '#fca5a5', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid #991b1b', display: 'flex', alignItems: 'center' },
-  main: { maxWidth: '700px', margin: '0 auto' },
+  main: { maxWidth: '750px', margin: '0 auto' },
   loader: { textAlign: 'center', marginTop: '80px', color: '#64748b' },
-  txCard: { background: '#0f172a', padding: '18px', borderRadius: '14px', marginBottom: '14px', border: '1px solid #1e293b', position: 'relative', animation: 'fadeIn 0.4s ease-out' },
-  whaleBadge: { position: 'absolute', bottom: '10px', right: '10px', background: '#fbbf24', color: '#000', padding: '3px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center' },
-  txRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '12px' },
-  time: { color: '#64748b', fontSize: '0.75rem' },
-  value: { fontWeight: 'bold', fontSize: '1.1rem' },
-  hash: { fontSize: '0.7rem', color: '#475569', marginBottom: '12px', fontFamily: 'monospace', overflow: 'hidden' },
-  addressBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#020617', padding: '10px', borderRadius: '8px' },
+  txCard: { background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', padding: '20px', borderRadius: '16px', marginBottom: '16px', border: '1px solid rgba(30, 41, 59, 0.7)', position: 'relative', animation: 'fadeIn 0.5s ease-out' },
+  whaleBadge: { position: 'absolute', bottom: '12px', right: '12px', background: '#fbbf24', color: '#000', padding: '4px 10px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center' },
+  txRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '14px' },
+  time: { color: '#64748b', fontSize: '0.8rem' },
+  value: { fontWeight: 'bold', fontSize: '1.2rem' },
+  hash: { fontSize: '0.75rem', color: '#475569', marginBottom: '15px', fontFamily: 'monospace', overflow: 'hidden' },
+  addressBox: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(2, 6, 23, 0.7)', padding: '12px', borderRadius: '12px' },
   addressItem: { flex: 1 },
-  addressLabel: { color: '#475569', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }
+  addressLabel: { color: '#475569', fontSize: '0.65rem', display: 'block', marginBottom: '4px' }
 };
 
 export default App;
